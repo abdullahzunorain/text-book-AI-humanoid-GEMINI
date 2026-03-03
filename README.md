@@ -26,13 +26,14 @@ This will:
 
 This project creates a comprehensive textbook for the Physical AI & Humanoid Robotics course with an AI-powered teaching assistant that can answer questions based on the textbook content.
 
-### Core Features
+### Core Features & Hackathon Requirements
 
-- **📖 Interactive Textbook**: Modern, responsive documentation site built with Docusaurus
-- **🤖 AI Chatbot**: RAG-powered teaching assistant embedded in the site
-- **🎯 Smart Search**: Semantic search across all textbook content
-- **💬 Context-Aware**: Remembers conversation history for better responses
-- **📊 User Personalization**: Tracks learning progress and preferences
+- **📖 Interactive Textbook**: Modern, responsive documentation site built with Docusaurus.
+- **🤖 AI Chatbot (OpenAI SDK + Gemini)**: RAG-powered teaching assistant embedded in the site. It uses the OpenAI SDK configured to talk to the Gemini API (`gemini-2.0-flash`).
+- **💬 Context & Text-Selection Aware**: Answers questions about the textbook, and optionally uses **only user-selected text** if the user highlights text before sending a message.
+- **👤 User Personalization (Bonus)**: Logged-in users can personalize chapter content to their hardware/software background via a click of a button in the UI. 
+- **🌐 Urdu Translation (Bonus)**: Instantly translate any chapter content to Urdu while preserving technical terms.
+- **🔐 Better-Auth Integration (Bonus)**: Signup and Signin flow intended to capture software/hardware background to feed the personalization agent. *(Note: Since Docusaurus is static, a simulated flow has been prepared via the FastAPI user endpoints; in a full stack scenario, deploy `better-auth` on an Express edge server).*
 
 ## 🏗️ Architecture
 
@@ -46,9 +47,9 @@ This project creates a comprehensive textbook for the Physical AI & Humanoid Rob
                     ┌────────────────┼────────────────┐
                     │                │                │
              ┌──────▼──────┐  ┌─────▼─────┐  ┌──────▼──────┐
-             │   Neon      │  │  Qdrant   │  │   Gemini    │
-             │  Postgres   │  │  Vector   │  │     AI      │
-             │  (Chat)     │  │    DB     │  │  (Embeddings)│
+             │   Neon      │  │  Qdrant   │  │ OpenAI SDK  │
+             │  Postgres   │  │  Vector   │  │  + Gemini   │
+             │  (Chat)     │  │    DB     │  │  (LLM API)  │
              └─────────────┘  └───────────┘  └─────────────┘
 ```
 
@@ -59,35 +60,15 @@ This project creates a comprehensive textbook for the Physical AI & Humanoid Rob
 - **React 19** - UI library
 - **TypeScript** - Type safety
 - **Vanilla CSS** - Styling with CSS modules
+- **React-Markdown** - Rendering transformed/translated content dynamically
 
 ### Backend
 - **FastAPI** - Web framework
 - **SQLAlchemy** - ORM
 - **Neon** - Serverless PostgreSQL
 - **Qdrant** - Vector database
-- **Gemini API** - AI embeddings and generation
-
-## 📖 Course Modules
-
-1. **Module 1: The Robotic Nervous System (ROS 2)**
-   - ROS 2 Nodes, Topics, and Services
-   - Python with rclpy
-   - URDF robot descriptions
-
-2. **Module 2: The Digital Twin (Gazebo & Unity)**
-   - Physics simulation
-   - Sensor simulation (LiDAR, IMU)
-   - Human-robot interaction
-
-3. **Module 3: The AI-Robot Brain (NVIDIA Isaac™)**
-   - Isaac Sim & SDK
-   - Perception pipelines
-   - Reinforcement learning
-
-4. **Module 4: Vision-Language-Action (VLA)**
-   - LLMs for planning
-   - Voice-to-action with Whisper
-   - Autonomous humanoid capstone
+- **uv** - Python package manager
+- **OpenAI SDK** - Connecting to Gemini (`base_url="https://generativelanguage.googleapis.com/v1beta/openai/"`)
 
 ## 🛠️ Setup Instructions
 
@@ -103,16 +84,14 @@ cd book-project
 ```bash
 cd backend
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+# Use uv for package management (WSL/Linux recommended)
+uv init
+uv add fastapi uvicorn python-dotenv pydantic psycopg2-binary sqlalchemy qdrant-client openai requests
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your credentials
+# Edit .env with your credentials (NEON_DB_URL, QDRANT_URL, QDRANT_API_KEY, GEMINI_API_KEY)
+# NOTE: The project requires GEMINI_API_KEY to be set!
 ```
 
 ### 3. Frontend Setup
@@ -128,174 +107,46 @@ npm install
 
 ```bash
 # In backend directory
-python init_db.py        # Initialize Neon
-python init_qdrant.py    # Initialize Qdrant
-python ingest_textbook.py # Ingest textbook content
+uv run python init_db.py        # Initialize Neon
+uv run python init_qdrant.py    # Initialize Qdrant
+uv run python ingest_textbook.py # Ingest textbook content
 ```
 
 ### 5. Run Servers
 
 ```bash
-# Option 1: Use startup script
-./start-dev.sh  # or start-dev.bat on Windows
-
-# Option 2: Run separately
 # Terminal 1 - Backend
-cd backend && source venv/bin/activate && python main.py
+cd backend && uv run uvicorn main:app --reload
 
 # Terminal 2 - Frontend
 cd frontend && npm start
 ```
 
-## 📝 Documentation
-
-- **[Integration Guide](INTEGRATION.md)** - Complete setup and testing guide
-- **[Backend README](backend/README.md)** - Backend API documentation
-- **[Chat Component](frontend/src/components/Chat/README.md)** - Chat UI documentation
-
-## 🧪 Testing
-
-### Backend Tests
-
-```bash
-cd backend
-
-# Test RAG components
-python test_rag.py --query "What is ROS 2?"
-
-# Test API (open Swagger UI)
-# Navigate to http://localhost:8000/docs
-```
-
-### Frontend Tests
-
-```bash
-cd frontend
-
-# Type check
-npm run typecheck
-
-# Build test
-npm run build
-```
-
 ## 📊 API Endpoints
 
-### Health Check
-```
-GET /health
-```
+### Chat & RAG
+- `POST /chat/`: Generates a response using RAG.
+  - Parameters: `user_id`, `message`, `session_id` (optional), `selected_text` (optional). If `selected_text` is passed, the chatbot restricts its answer to the provided text context only!
+
+### Personalize & Translate (Bonus Features)
+- `POST /personalize/`: Takes `user_id` and `content`. Uses Gemini to rewrite the content making it relatable to the user's software/hardware background.
+- `POST /translate/`: Takes `content` and returns the Urdu translation.
 
 ### User Management
-```
-POST /users/?name=John&email=john@example.com
-GET /users/{user_id}
-```
-
-### Chat (RAG-powered)
-```
-POST /chat/?user_id=1&message=What is ROS 2?&session_id=session123
-GET /chat/history/{user_id}?limit=20
-```
-
-## 🚀 Deployment
-
-### Frontend (GitHub Pages)
-
-```bash
-cd frontend
-npm run build
-GIT_USER=yourusername npm run deploy
-```
-
-### Backend (Render/Railway)
-
-1. Connect repository to hosting platform
-2. Set environment variables
-3. Deploy automatically on push
-
-See [INTEGRATION.md](INTEGRATION.md) for detailed deployment instructions.
+- `POST /users/`: Register user (name, email, `hardware_background`, `software_background`).
+- `GET /users/{user_id}`: Fetch user context.
 
 ## 🎯 Development Workflow
 
-This project uses **Spec-Driven Development (SDD)** with SpecifyPlus:
-
-- `/sp.specify` - Create feature specifications
-- `/sp.plan` - Generate architecture plans
-- `/sp.tasks` - Break into tasks
-- `/sp.phr` - Record prompt history
-- `/sp.adr` - Document architectural decisions
-
-## 📁 Project Structure
-
-```
-book-project/
-├── backend/                 # FastAPI backend
-│   ├── main.py             # API routes
-│   ├── database.py         # Database connection
-│   ├── models.py           # SQLAlchemy models
-│   ├── crud_*.py           # CRUD operations
-│   ├── rag_service.py      # RAG chat service
-│   ├── ingest_textbook.py  # Content ingestion
-│   └── requirements.txt    # Python dependencies
-├── frontend/               # Docusaurus frontend
-│   ├── docs/              # Textbook content
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   │   └── Chat/      # Chat component
-│   │   └── theme/         # Custom theme
-│   │       └── Layout.tsx # Layout with chat
-│   └── docusaurus.config.ts
-├── specs/                  # Feature specifications
-│   └── mvp/               # MVP spec
-├── history/               # Prompt history records
-│   └── prompts/
-├── .specify/              # SpecifyPlus config
-├── INTEGRATION.md         # Integration guide
-├── start-dev.sh           # Dev startup (Linux/macOS)
-└── start-dev.bat          # Dev startup (Windows)
-```
-
-## ✅ Implementation Status
-
-- [x] Task 1.1: Initialize Docusaurus
-- [x] Task 1.2: Structure Course Modules
-- [x] Task 1.3: Configure GitHub Pages
-- [x] Task 2.1: FastAPI Boilerplate
-- [x] Task 2.2: Neon Integration
-- [x] Task 2.3: Qdrant Integration
-- [x] Task 3.1: Textbook Ingestion Script
-- [x] Task 3.2: RAG Chat Logic
-- [x] Task 4.1: React Chat Component
-- [x] Task 4.2: End-to-End Integration
-- [x] Task 5.1: Deployment - **COMPLETED** (Configuration Ready)
-
-## 🔐 Security
-
-- Environment variables for all secrets
-- CORS configured for production
-- Input validation on all endpoints
-- SQL injection protection via SQLAlchemy ORM
+This project is developed using **Spec-Driven Development (SDD)** with SpecifyPlus tools. 
+- You can find the development specifications and plans in the `specs/` directory.
+- Prompt histories are stored in `history/prompts/`.
+- Executed using the `gemini` CLI and OpenAI SDK integrations.
 
 ## 🤝 Contributing
 
-1. Create feature branch: `git checkout -b 001-feature-name`
+1. Create feature branch: `git checkout -b feature-name`
 2. Make changes following SDD principles
 3. Create PHR for significant work
 4. Submit pull request
 
-## 📄 License
-
-[Add your license here]
-
-## 👥 Authors
-
-- Abdullah Zunorain
-
-## 🙏 Acknowledgments
-
-- Panaversity Spec-Kit Plus for SDD framework
-- Docusaurus team
-- FastAPI team
-- Qdrant team
-- Gemini AI

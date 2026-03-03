@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import os
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 load_dotenv()
 
@@ -105,20 +106,11 @@ async def chat(
     user_id: int,
     message: str,
     session_id: str = None,
+    selected_text: str = None,
     db: Session = Depends(get_db)
 ):
     """
     Send a message and get a RAG-powered response from the AI chatbot.
-    
-    This endpoint:
-    1. Retrieves relevant textbook content from Qdrant
-    2. Gets chat history from Neon
-    3. Generates a response using Gemini AI
-    4. Saves the conversation to Neon
-    
-    - **user_id**: User's ID
-    - **message**: User's message
-    - **session_id**: Optional session identifier for conversation grouping
     """
     try:
         # Initialize RAG service
@@ -129,7 +121,8 @@ async def chat(
         result = rag_service.chat(
             user_id=user_id,
             message=message,
-            session_id=session_id
+            session_id=session_id,
+            selected_text=selected_text
         )
         
         bot_response = result["response"]
@@ -179,10 +172,6 @@ async def get_chat_history(
 ):
     """
     Get chat history for a user.
-    
-    - **user_id**: User's ID
-    - **session_id**: Optional session filter
-    - **limit**: Maximum number of messages to return
     """
     user = get_user_by_id(db, user_id=user_id)
     if not user:
@@ -209,6 +198,40 @@ async def get_chat_history(
         ],
         "count": len(messages)
     }
+
+
+class ContentRequest(BaseModel):
+    user_id: int
+    content: str
+
+@app.post("/personalize/")
+async def personalize(
+    req: ContentRequest,
+    db: Session = Depends(get_db)
+):
+    try:
+        qdrant_client = get_qdrant_client()
+        rag_service = RAGService(db, qdrant_client)
+        personalized = rag_service.personalize_content(req.user_id, req.content)
+        return {"content": personalized}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class TranslateRequest(BaseModel):
+    content: str
+
+@app.post("/translate/")
+async def translate(
+    req: TranslateRequest,
+    db: Session = Depends(get_db)
+):
+    try:
+        qdrant_client = get_qdrant_client()
+        rag_service = RAGService(db, qdrant_client)
+        translated = rag_service.translate_content(req.content)
+        return {"content": translated}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
