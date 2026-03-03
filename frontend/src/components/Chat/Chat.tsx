@@ -46,10 +46,12 @@ const Chat: React.FC<ChatProps> = ({ apiUrl = 'http://localhost:8000', userId = 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
+    const selectedText = window.getSelection()?.toString().trim() || '';
+    
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input.trim(),
+      content: input.trim() + (selectedText ? ` (Selected: "${selectedText.substring(0, 50)}${selectedText.length > 50 ? '...' : ''}")` : ''),
       timestamp: new Date().toISOString(),
     };
 
@@ -59,15 +61,17 @@ const Chat: React.FC<ChatProps> = ({ apiUrl = 'http://localhost:8000', userId = 
     setError(null);
 
     try {
-      const response = await fetch(
-        `${apiUrl}/chat/?user_id=${userId}&message=${encodeURIComponent(userMessage.content)}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      let url = `${apiUrl}/chat/?user_id=${userId}&message=${encodeURIComponent(input.trim())}`;
+      if (selectedText) {
+        url += `&selected_text=${encodeURIComponent(selectedText)}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
