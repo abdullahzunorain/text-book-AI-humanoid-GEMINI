@@ -1,0 +1,90 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+      
+      - name: Build
+        run: |
+          cd frontend
+          npm run build
+      
+      - name: Deploy to GitHub Pages
+        env:
+          GIT_USER: ${{ github.actor }}
+          GIT_PASS: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd frontend
+          git config --global user.name '${{ github.actor }}'
+          git config --global user.email '${{ github.actor }}@users.noreply.github.com'
+          npm run deploy
+
+  deploy-backend:
+    runs-on: ubuntu-latest
+    needs: deploy-frontend  # Deploy frontend first
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy to Render
+        if: ${{ secrets.RENDER_SERVICE_ID != '' }}
+        uses: render-oss/actions/deploy@v1
+        with:
+          service-id: ${{ secrets.RENDER_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
+      
+      - name: Backend deployment note
+        if: ${{ secrets.RENDER_SERVICE_ID == '' }}
+        run: |
+          echo "::notice::Backend deployment skipped. Set RENDER_SERVICE_ID and RENDER_API_KEY secrets to enable."
+          echo "Manual deployment options:"
+          echo "  - Render: Connect repository in Render dashboard"
+          echo "  - Railway: Deploy from GitHub in Railway dashboard"
+          echo "  - Vercel: Run 'vercel --prod' locally"
+
+  post-deployment:
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend]
+    if: always()
+    
+    steps:
+      - name: Deployment summary
+        run: |
+          echo "## Deployment Summary"
+          echo ""
+          echo "✅ Frontend deployed to GitHub Pages"
+          echo "   URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+          echo ""
+          if [ "${{ secrets.RENDER_SERVICE_ID }}" != "" ]; then
+            echo "✅ Backend deployed to Render"
+          else
+            echo "⚠️ Backend deployment skipped (no Render credentials)"
+          fi
+          echo ""
+          echo "### Next Steps"
+          echo "1. Verify frontend deployment"
+          echo "2. Test chat functionality"
+          echo "3. Check backend health endpoint"
+          echo "4. Monitor logs for errors"

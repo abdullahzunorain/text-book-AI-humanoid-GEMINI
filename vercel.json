@@ -1,0 +1,25 @@
+# Vercel deployment configuration for AI Humanoid Textbook Backend
+
+{
+  "version": 2,
+  "functions": {
+    "backend/main.py": {
+      "runtime": "@vercel/python"
+    }
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "backend/main.py"
+    }
+  ],
+  "env": {
+    "APP_ENV": "production"
+  },
+  "build": {
+    "env": {
+      "PIP_CHACHE_DIR": "/tmp/pip-cache"
+    }
+  },
+  "outputDirectory": "backend"
+}
