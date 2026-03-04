@@ -10,7 +10,8 @@ import json
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_EMBEDDINGS_URL = "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent"
+# Correct model name is gemini-embedding-001
+GEMINI_EMBEDDINGS_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent"
 
 
 def get_embedding(text: str) -> List[float]:
@@ -36,7 +37,6 @@ def get_embedding(text: str) -> List[float]:
     url = f"{GEMINI_EMBEDDINGS_URL}?key={GEMINI_API_KEY}"
     
     payload = {
-        "model": "text-embedding-004",
         "content": {
             "parts": [
                 {
@@ -88,9 +88,9 @@ def get_embedding_dimension() -> int:
     Get the dimension of embeddings produced by the model.
     
     Returns:
-        Dimension size (768 for text-embedding-004)
+        Dimension size (768 for gemini-embedding-001)
     """
-    # Gemini text-embedding-004 produces 768-dimensional vectors
+    # gemini-embedding-001 produces 768-dimensional vectors
     return 768
 
 

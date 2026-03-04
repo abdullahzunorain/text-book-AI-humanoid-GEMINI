@@ -14,8 +14,8 @@ QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 # Collection name for textbook content
 TEXTBOOK_COLLECTION = "textbook_segments"
 
-# Vector dimensions (using Gemini embeddings - 768 dimensions)
-VECTOR_SIZE = 768
+# Vector dimensions (using gemini-embedding-001 - 3072 dimensions)
+VECTOR_SIZE = 3072
 
 
 def get_qdrant_client() -> QdrantClient:

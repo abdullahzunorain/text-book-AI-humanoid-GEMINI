@@ -25,10 +25,6 @@ class RAGService:
     def __init__(self, db: Session, qdrant_client: QdrantClient):
         """
         Initialize RAG service.
-        
-        Args:
-            db: Database session
-            qdrant_client: Qdrant vector database client
         """
         self.db = db
         self.qdrant_client = qdrant_client
@@ -60,7 +56,6 @@ class RAGService:
         Format chat history into OpenAI message format.
         """
         formatted = []
-        # Reversing to chronological order
         for msg in reversed(messages[:10]):
             role = "user" if msg.role == "user" else "assistant"
             formatted.append({"role": role, "content": msg.content})
@@ -78,12 +73,10 @@ class RAGService:
         """
         from crud_users import get_user_context, get_user_by_id
         
-        # Verify user exists
         user = get_user_by_id(self.db, user_id)
         if not user:
             raise ValueError(f"User {user_id} not found")
         
-        # Get user context
         user_ctx = get_user_context(self.db, user_id)
         user_context_str = ""
         if user_ctx:
@@ -106,18 +99,13 @@ Instructions:
 """
             context_used = True
         else:
-            # Retrieve context from Qdrant
             context = self.retrieve_context(message, limit=5)
             context_used = len(context) > 0
             
             context_text = "No relevant textbook information found.\n"
             if context_used:
                 sources = [
-                    {
-                        "chapter": seg["chapter_title"],
-                        "module": seg["module_name"],
-                        "score": seg["score"]
-                    }
+                    {"chapter": seg["chapter_title"], "module": seg["module_name"], "score": seg["score"]}
                     for seg in context
                 ]
                 context_text = "Relevant textbook information:\n\n"
@@ -135,13 +123,7 @@ Instructions:
 4. Keep explanations clear and educational.
 """
 
-        # Get recent chat history
-        chat_history_msgs = get_recent_chat_history(
-            self.db,
-            user_id=user_id,
-            session_id=session_id,
-            limit=10
-        )
+        chat_history_msgs = get_recent_chat_history(self.db, user_id=user_id, session_id=session_id, limit=10)
         
         messages = [{"role": "system", "content": system_prompt}]
         messages.extend(self.format_chat_history(chat_history_msgs))
@@ -154,10 +136,8 @@ Instructions:
             max_tokens=1024
         )
         
-        response_text = response.choices[0].message.content
-        
         return {
-            "response": response_text,
+            "response": response.choices[0].message.content,
             "context_used": context_used,
             "context_count": len(context) if not selected_text else 1,
             "sources": sources
@@ -166,26 +146,24 @@ Instructions:
     def personalize_content(self, user_id: int, content: str) -> str:
         """Personalize content based on user's background."""
         from crud_users import get_user_by_id
-        
         user = get_user_by_id(self.db, user_id)
-        if not user:
-            return content
+        
+        hardware = user.hardware_background if user else "None"
+        software = user.software_background if user else "None"
             
         system_prompt = f"""
-You are an expert AI textbook author. Rewrite the following textbook content to make it more personalized for a reader with the following background:
-- Hardware Background: {user.hardware_background or 'None specified'}
-- Software Background: {user.software_background or 'None specified'}
-
-Make it relatable to their background using analogies. Maintain the original core concepts, facts, and structure.
-
-Content to personalize:
-\"\"\"
-{content}
-\"\"\"
+You are an expert AI textbook author. Rewrite the provided textbook content to make it more personalized for a reader with this background:
+- Hardware: {hardware}
+- Software: {software}
 """
+        user_msg = f"Personalize the following content while maintaining core concepts and structure:\n\n{content}"
+        
         response = self.client.chat.completions.create(
             model="gemini-2.0-flash",
-            messages=[{"role": "system", "content": system_prompt}],
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_msg}
+            ],
             temperature=0.7,
             max_tokens=2048
         )
@@ -193,29 +171,19 @@ Content to personalize:
 
     def translate_content(self, content: str) -> str:
         """Translate content to Urdu."""
-        system_prompt = f"""
-You are an expert translator. Translate the following technical textbook content into Urdu. Maintain the formatting, markdown tags, and technical terms where appropriate (you may transliterate or use the English term in parentheses if it's clearer).
-
-Content to translate:
-\"\"\"
-{content}
-\"\"\"
-"""
+        system_prompt = "You are an expert translator. Translate the following technical textbook content into Urdu. Maintain the formatting, markdown tags, and technical terms where appropriate."
+        
         response = self.client.chat.completions.create(
             model="gemini-2.0-flash",
-            messages=[{"role": "system", "content": system_prompt}],
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Translate this content:\n\n{content}"}
+            ],
             temperature=0.3,
             max_tokens=4000
         )
         return response.choices[0].message.content
 
-def rag_chat(
-    db: Session,
-    qdrant_client: QdrantClient,
-    user_id: int,
-    message: str,
-    session_id: Optional[str] = None,
-    selected_text: Optional[str] = None
-) -> Dict[str, Any]:
+def rag_chat(db: Session, qdrant_client: QdrantClient, user_id: int, message: str, session_id: Optional[str] = None, selected_text: Optional[str] = None) -> Dict[str, Any]:
     service = RAGService(db, qdrant_client)
     return service.chat(user_id, message, session_id, selected_text)
