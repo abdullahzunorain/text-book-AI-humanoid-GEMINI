@@ -96,7 +96,19 @@ const config: Config = {
             },
             {
               label: 'Module 1: ROS 2',
-              to: '/docs/module-1-ros2/intro',
+              to: '/docs/module-1-ros2/',
+            },
+            {
+              label: 'Module 2: Digital Twin',
+              to: '/docs/module-2-digital-twin/',
+            },
+            {
+              label: 'Module 3: NVIDIA Isaac',
+              to: '/docs/module-3-nvidia-isaac/',
+            },
+            {
+              label: 'Module 4: VLA',
+              to: '/docs/module-4-vla/',
             },
           ],
         },

@@ -208,3 +208,10 @@ Wait for consent; never auto-create ADRs. Group related decisions (stacks, authe
 
 ## Code Standards
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
+
+## Active Technologies
+- Python 3.13 (Backend), Node.js (Frontend) + FastAPI, Docusaurus 3, Qdrant-Client, OpenAI SDK (Gemini), SQLAlchemy, Better-Auth (003-physical-ai-robotics-textbook)
+- Neon Serverless Postgres (Chat/User), Qdrant Cloud (Vectors) (003-physical-ai-robotics-textbook)
+
+## Recent Changes
+- 003-physical-ai-robotics-textbook: Added Python 3.13 (Backend), Node.js (Frontend) + FastAPI, Docusaurus 3, Qdrant-Client, OpenAI SDK (Gemini), SQLAlchemy, Better-Auth

@@ -1,48 +1,91 @@
-# Technical Plan: Physical AI & Humanoid Robotics Textbook
+# Implementation Plan: Physical AI & Humanoid Robotics Textbook (AI-Native)
 
-**Feature**: `003-physical-ai-robotics-textbook`  
-**Created**: 2026-03-03
-**Status**: Draft
+**Branch**: `003-physical-ai-robotics-textbook` | **Date**: 2026-03-05 | **Spec**: `specs/003-physical-ai-robotics-textbook/spec.md`
+**Status**: Ready for `/sp.tasks`
 
-## 1. Architecture Overview
-This project uses a standard web architecture:
-- **Frontend**: A Docusaurus (React) single-page application for the textbook content.
-- **Backend**: A FastAPI (Python) server providing the RAG, personalization, and translation APIs.
-- **Database**: Neon Serverless Postgres for user and chat history.
-- **Vector Store**: Qdrant Cloud for storing and searching textbook embeddings.
-- **AI Services**: Gemini API via the OpenAI SDK for embeddings, chat generation, and content transformation.
+## Summary
 
-## 2. File Structure
-The key files for this implementation are:
+Build a fully deployed, AI-native textbook platform for the "Physical AI & Humanoid Robotics" course. The platform consists of:
+1. A **Docusaurus 3** static site (deployed to GitHub Pages) containing structured course content across 4 modules and 13 weekly chapters.
+2. A **FastAPI** backend (deployed to Render.com) that powers a RAG chatbot, content personalization, and Urdu translation — all backed by **Qdrant Cloud** (vectors) and **Neon Serverless Postgres** (relational data).
+3. A **better-auth** authentication layer integrated into the Docusaurus frontend, with session validation shared via the Neon database to FastAPI.
+4. **Claude Code Subagents** automating content generation, RAG indexing, and test scaffolding for bonus points.
 
-- `frontend/src/theme/DocItem/Layout/index.tsx`: Wraps every textbook page to add bonus feature buttons.
-- `frontend/src/components/Chat/Chat.tsx`: The RAG chat UI.
-- `backend/main.py`: The main FastAPI application with all API endpoints.
-- `backend/rag_service.py`: Contains all the core AI logic (chat, personalize, translate).
-- `backend/embeddings.py`: Handles vector embedding generation via the Gemini API.
-- `backend/crud_*.py`: Manages database interactions for users and messages.
+## Technical Context
 
-## 3. Tech Stack
-- **Frontend**: Docusaurus, React, TypeScript
-- **Backend**: FastAPI, Python, SQLAlchemy, `uv`
-- **Database**: Neon (Postgres)
-- **Vector DB**: Qdrant
-- **AI SDK**: OpenAI Python SDK (configured for Gemini)
+| Concern | Decision |
+|---|---|
+| **Frontend** | Docusaurus 3 (React, TypeScript) |
+| **Backend** | FastAPI (Python 3.13, managed by `uv`) |
+| **Vector DB** | Qdrant Cloud Free Tier — collection size `768` (ADR-001) |
+| **Embedding Model** | `gemini-embedding-001` — 768 dimensions (ADR-001) |
+| **LLM** | `gemini-2.0-flash` via Google Generative AI SDK |
+| **Relational DB** | Neon Serverless Postgres (SQLAlchemy async) |
+| **Auth** | `better-auth` (frontend) + shared Neon session table (FastAPI) (ADR-002) |
+| **Testing** | `pytest` + `httpx.AsyncClient` — TDD mandatory for all endpoints |
+| **Package Manager** | `uv` for Python, `npm` for Node.js |
+| **Dev Environment** | WSL2 (Ubuntu 22.04) |
+| **Frontend Deploy** | GitHub Pages via `npm run deploy` + GitHub Actions |
+| **Backend Deploy** | Render.com (free tier, Docker) |
+| **Content Structure** | Module landing pages + weekly sub-pages (ADR-003) |
 
-## 4. API Contracts
-- **`POST /chat/`**: 
-  - Request: `{ "user_id": int, "message": str, "selected_text": Optional[str] }`
-  - Response: `{ "response": str, "sources": List }`
-- **`POST /personalize/`**: 
-  - Request: `{ "user_id": int, "content": str }`
-  - Response: `{ "content": str }`
-- **`POST /translate/`**: 
-  - Request: `{ "content": str }`
-  - Response: `{ "content": str }`
+## Constitution Check
 
-## 5. Implementation Strategy
-The core functionality is already in place. This implementation will focus on ensuring the bonus features and RAG selection work as intended. We will:
-1.  Verify that the `Chat.tsx` component correctly captures and sends selected text.
-2.  Ensure the `DocItem/Layout/index.tsx` wrapper correctly fetches the active chapter content and sends it to the backend for personalization/translation.
-3.  Add unit or integration tests to validate the backend endpoints.
-4.  Update the documentation to reflect the final state.
+- [x] Spec-Driven: Plan originates from `spec.md`.
+- [x] Docusaurus-First: Frontend is Docusaurus 3.
+- [x] RAG-Native: Core feature using FastAPI/Neon/Qdrant.
+- [x] TDD: Pytest before implementation.
+- [x] `uv` Tooling: All Python commands via `uv`.
+- [x] WSL2: Scripts documented for WSL2.
+- [x] Knowledge Capture: PHRs required.
+- [x] Mandated Auth: `better-auth` integration.
+
+## Project Structure
+
+### Documentation
+
+```text
+specs/003-physical-ai-robotics-textbook/
+├── spec.md                  # Requirements
+├── plan.md                  # This file
+├── research.md              # Phase 0 output
+├── data-model.md            # Phase 1 output
+├── quickstart.md            # Phase 1 output
+├── adrs/
+│   ├── ADR-001-vector-dimensions.md
+│   ├── ADR-002-better-auth-fastapi.md
+│   └── ADR-003-content-structure.md
+├── contracts/
+│   └── openapi.yaml         # FastAPI contracts
+└── tasks.md                 # Phase 2 output
+```
+
+### Source Code
+
+```text
+backend/
+├── src/
+│   ├── main.py
+│   ├── models/
+│   ├── schemas/
+│   ├── api/
+│   ├── services/
+│   └── db/
+└── tests/
+
+frontend/
+├── src/
+│   ├── components/
+│   ├── theme/
+│   └── services/
+└── docs/
+
+scripts/                     # Claude Code Subagent scripts
+```
+
+## Complexity Tracking
+
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| Two deployments | Docusaurus (static) vs FastAPI (dynamic) | Vercel serverless would require full FastAPI refactor. |
+| Auth complexity | Cross-language (TS auth + Python backend) | Direct consequence of mandated stack. |

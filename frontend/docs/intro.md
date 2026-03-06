@@ -1,9 +1,9 @@
-# Physical AI & Humanoid Robotics
+# Welcome to Physical AI & Humanoid Robotics
 
-Welcome to the comprehensive textbook for the **Physical AI & Humanoid Robotics** course. This book covers the journey from robot middleware to embodied intelligence.
+This course covers the integration of AI with physical systems, focusing on humanoid robots.
 
 ## Course Modules
-1. **Module 1: The Robotic Nervous System (ROS 2)**
-2. **Module 2: The Digital Twin (Gazebo & Unity)**
-3. **Module 3: The AI-Robot Brain (NVIDIA Isaac™)**
-4. **Module 4: Vision-Language-Action (VLA)**
+1. ROS 2: The Robotic Nervous System
+2. Digital Twin: Simulation & Modeling
+3. NVIDIA Isaac: GPU-Accelerated Robotics
+4. VLA: Vision-Language-Action Models

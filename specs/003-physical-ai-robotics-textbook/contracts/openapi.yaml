@@ -1,0 +1,117 @@
+openapi: 3.0.0
+info:
+  title: AI Humanoid Textbook API
+  version: 1.0.0
+  description: RAG-native API for Physical AI textbook.
+
+paths:
+  /chat/:
+    post:
+      summary: RAG-powered chat
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message, session_id]
+              properties:
+                message: { type: string, maxLength: 2000 }
+                session_id: { type: string, format: uuid }
+                selected_text: { type: string }
+      responses:
+        200:
+          description: AI response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response: { type: string }
+                  sources:
+                    type: array
+                    items: { $ref: '#/components/schemas/Source' }
+                  session_id: { type: string }
+
+  /personalize/:
+    post:
+      summary: AI content personalization
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content, chapter_title]
+              properties:
+                content: { type: string }
+                chapter_title: { type: string }
+      responses:
+        200:
+          description: Personalized Markdown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  personalized_content: { type: string }
+                  user_background: { type: object }
+
+  /translate/:
+    post:
+      summary: AI Urdu translation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content, chapter_title]
+              properties:
+                content: { type: string }
+                chapter_title: { type: string }
+      responses:
+        200:
+          description: Urdu Markdown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  translated_content: { type: string }
+                  language: { type: string }
+
+  /health/:
+    get:
+      summary: Health check
+      responses:
+        200:
+          description: Status OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  database: { type: string }
+                  vector_store: { type: string }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Source:
+      type: object
+      properties:
+        chapter_title: { type: string }
+        module_name: { type: string }
+        url: { type: string }
+        score: { type: number }
