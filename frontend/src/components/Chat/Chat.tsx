@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import styles from './Chat.module.css';
 
 interface Message {
@@ -17,16 +17,22 @@ interface Source {
 
 interface ChatProps {
   apiUrl?: string;
-  userId?: number;
+  authToken?: string | null;
 }
 
-const Chat: React.FC<ChatProps> = ({ apiUrl = 'http://localhost:8000', userId = 1 }) => {
+const Chat: React.FC<ChatProps> = ({
+  apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000',
+  authToken = null,
+}) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Generate a stable session_id on mount
+  const sessionId = useMemo(() => crypto.randomUUID(), []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -37,9 +43,9 @@ const Chat: React.FC<ChatProps> = ({ apiUrl = 'http://localhost:8000', userId = 
   }, [messages]);
 
   const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(timestamp).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -47,7 +53,7 @@ const Chat: React.FC<ChatProps> = ({ apiUrl = 'http://localhost:8000', userId = 
     if (!input.trim() || isLoading) return;
 
     const selectedText = window.getSelection()?.toString().trim() || '';
-    
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -61,16 +67,25 @@ const Chat: React.FC<ChatProps> = ({ apiUrl = 'http://localhost:8000', userId = 
     setError(null);
 
     try {
-      let url = `${apiUrl}/chat/?user_id=${userId}&message=${encodeURIComponent(input.trim())}`;
-      if (selectedText) {
-        url += `&selected_text=${encodeURIComponent(selectedText)}`;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
       }
 
-      const response = await fetch(url, {
+      const body: Record<string, string> = {
+        message: input.trim(),
+        session_id: sessionId,
+      };
+      if (selectedText) {
+        body.selected_text = selectedText;
+      }
+
+      const response = await fetch(`${apiUrl}/chat/`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -91,21 +106,21 @@ const Chat: React.FC<ChatProps> = ({ apiUrl = 'http://localhost:8000', userId = 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
       setError(errorMessage);
-      
+
       const errorMessageObj: Message = {
         id: (Date.now() + 1).toString(),
         role: 'bot',
-        content: `I apologize, but I encountered an error: ${errorMessage}. Please try again.`,
+        content: 'Sorry, I could not connect to the server. Please check your connection and try again.',
         timestamp: new Date().toISOString(),
       };
-      
+
       setMessages(prev => [...prev, errorMessageObj]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -119,10 +134,10 @@ const Chat: React.FC<ChatProps> = ({ apiUrl = 'http://localhost:8000', userId = 
   return (
     <div className={`${styles.chatContainer} ${isCollapsed ? styles.collapsed : ''}`}>
       <div className={styles.chatHeader} onClick={toggleChat}>
-        <h3>🤖 AI Textbook Assistant</h3>
+        <h3>AI Textbook Assistant</h3>
         <div className={styles.chatHeaderActions}>
           <button className={styles.chatToggleBtn}>
-            {isCollapsed ? '💬' : '−'}
+            {isCollapsed ? 'Open' : 'Close'}
           </button>
         </div>
       </div>
@@ -132,12 +147,12 @@ const Chat: React.FC<ChatProps> = ({ apiUrl = 'http://localhost:8000', userId = 
           <div className={styles.chatMessages}>
             {messages.length === 0 ? (
               <div className={styles.chatWelcome}>
-                <div className={styles.chatWelcomeIcon}>📚</div>
+                <div className={styles.chatWelcomeIcon}>AI</div>
                 <div className={styles.chatWelcomeTitle}>
                   Ask me anything about the textbook!
                 </div>
                 <div className={styles.chatWelcomeText}>
-                  I can help you understand concepts from ROS 2, digital twins, 
+                  I can help you understand concepts from ROS 2, digital twins,
                   NVIDIA Isaac, and Vision-Language-Action models.
                 </div>
               </div>
@@ -158,10 +173,10 @@ const Chat: React.FC<ChatProps> = ({ apiUrl = 'http://localhost:8000', userId = 
                   <div className={styles.chatMessageTime}>
                     {formatTime(message.timestamp)}
                   </div>
-                  
+
                   {message.sources && message.sources.length > 0 && (
                     <div className={styles.chatSources}>
-                      <div className={styles.chatSourcesTitle}>📖 Sources:</div>
+                      <div className={styles.chatSourcesTitle}>Sources:</div>
                       {message.sources.map((source, idx) => (
                         <div key={idx} className={styles.chatSourceItem}>
                           <span>
@@ -193,7 +208,7 @@ const Chat: React.FC<ChatProps> = ({ apiUrl = 'http://localhost:8000', userId = 
 
             {error && (
               <div className={styles.chatError}>
-                ⚠️ {error}
+                {error}
               </div>
             )}
 
@@ -206,7 +221,7 @@ const Chat: React.FC<ChatProps> = ({ apiUrl = 'http://localhost:8000', userId = 
               className={styles.chatInput}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyDown}
               placeholder="Ask a question about the textbook..."
               disabled={isLoading}
             />
@@ -215,7 +230,7 @@ const Chat: React.FC<ChatProps> = ({ apiUrl = 'http://localhost:8000', userId = 
               onClick={sendMessage}
               disabled={!input.trim() || isLoading}
             >
-              ➤
+              Send
             </button>
           </div>
         </>

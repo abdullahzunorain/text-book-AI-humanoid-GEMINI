@@ -1,63 +1,93 @@
 # Implementation Plan: Physical AI & Humanoid Robotics Textbook (AI-Native)
 
-**Branch**: `003-physical-ai-robotics-textbook` | **Date**: 2026-03-05 | **Spec**: `specs/003-physical-ai-robotics-textbook/spec.md`
-**Status**: Ready for `/sp.tasks`
+**Branch**: `003-physical-ai-robotics-textbook` | **Date**: 2026-03-08 | **Spec**: `specs/003-physical-ai-robotics-textbook/spec.md`
+**Status**: Refreshed — MVP built; Phase 2–4 pending
+
+---
 
 ## Summary
 
 Build a fully deployed, AI-native textbook platform for the "Physical AI & Humanoid Robotics" course. The platform consists of:
+
 1. A **Docusaurus 3** static site (deployed to GitHub Pages) containing structured course content across 4 modules and 13 weekly chapters.
-2. A **FastAPI** backend (deployed to Render.com) that powers a RAG chatbot, content personalization, and Urdu translation — all backed by **Qdrant Cloud** (vectors) and **Neon Serverless Postgres** (relational data).
-3. A **better-auth** authentication layer integrated into the Docusaurus frontend, with session validation shared via the Neon database to FastAPI.
-4. **Claude Code Subagents** automating content generation, RAG indexing, and test scaffolding for bonus points.
+2. A **FastAPI** backend (deployed to Render.com) powering RAG chat, content personalization, and Urdu translation — backed by **Qdrant Cloud** (vectors) and **Neon Serverless Postgres** (relational data).
+3. A **better-auth** authentication layer integrated into the Docusaurus frontend, with session validation shared via Neon to FastAPI.
+4. **Per-chapter AI action buttons** (Personalize + Translate to Urdu) for logged-in users.
+5. **Claude Code Subagents & Agent Skills** for reusable intelligence automation.
+
+### Current State (as of 2026-03-08)
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Docusaurus site + 13 chapters | ✅ Done | GitHub Pages deployed |
+| RAG service (rag.py) | ✅ Done | gemini-2.0-flash + Qdrant |
+| Qdrant ingestion script | ✅ Done | 768-dim gemini-embedding-001 |
+| Basic user/message DB models | ✅ Done | SQLAlchemy async + Neon |
+| FastAPI health endpoint | ✅ Done | /health |
+| Chat/personalize/translate API | ⚠️ Partial | Logic exists in rag.py, but routes NOT wired into main.py |
+| better-auth (frontend auth) | ❌ Missing | Not implemented |
+| Per-chapter action buttons | ❌ Missing | Personalize/Translate buttons absent from Docusaurus |
+| Claude Code Subagents/Skills | ❌ Missing | FR-010 not implemented |
+| TDD endpoint tests | ⚠️ Partial | Test scaffold exists, coverage incomplete |
+
+---
 
 ## Technical Context
 
 | Concern | Decision |
-|---|---|
-| **Frontend** | Docusaurus 3 (React, TypeScript) |
+|---------|----------|
+| **Frontend** | Docusaurus 3 (React 19, TypeScript) |
 | **Backend** | FastAPI (Python 3.13, managed by `uv`) |
-| **Vector DB** | Qdrant Cloud Free Tier — collection size `768` (ADR-001) |
+| **Vector DB** | Qdrant Cloud Free Tier — 768-dim collection (ADR-001) |
 | **Embedding Model** | `gemini-embedding-001` — 768 dimensions (ADR-001) |
-| **LLM** | `gemini-2.0-flash` via Google Generative AI SDK |
-| **Relational DB** | Neon Serverless Postgres (SQLAlchemy async) |
-| **Auth** | `better-auth` (frontend) + shared Neon session table (FastAPI) (ADR-002) |
-| **Testing** | `pytest` + `httpx.AsyncClient` — TDD mandatory for all endpoints |
-| **Package Manager** | `uv` for Python, `npm` for Node.js |
+| **LLM** | `gemini-2.0-flash` via OpenAI-compatible SDK |
+| **Relational DB** | Neon Serverless Postgres (SQLAlchemy async + asyncpg) |
+| **Auth** | `better-auth` (TypeScript/frontend) + shared Neon session table (FastAPI validates) (ADR-002) |
+| **Testing** | `pytest` + `httpx.AsyncClient` — TDD for all FastAPI endpoints |
+| **Package Manager** | `uv` (Python), `npm` (Node.js) |
 | **Dev Environment** | WSL2 (Ubuntu 22.04) |
 | **Frontend Deploy** | GitHub Pages via `npm run deploy` + GitHub Actions |
 | **Backend Deploy** | Render.com (free tier, Docker) |
-| **Content Structure** | Module landing pages + weekly sub-pages (ADR-003) |
+| **Content Structure** | Module landing pages + 13 weekly sub-pages (ADR-003) |
+| **Subagents** | Claude Code `.claude/commands/` skills for ingestion, test-gen, content-gen |
+
+---
 
 ## Constitution Check
 
-- [x] Spec-Driven: Plan originates from `spec.md`.
-- [x] Docusaurus-First: Frontend is Docusaurus 3.
-- [x] RAG-Native: Core feature using FastAPI/Neon/Qdrant.
-- [x] TDD: Pytest before implementation.
-- [x] `uv` Tooling: All Python commands via `uv`.
-- [x] WSL2: Scripts documented for WSL2.
-- [x] Knowledge Capture: PHRs required.
-- [x] Mandated Auth: `better-auth` integration.
+Since the constitution.md template is not yet project-filled, the following gate checks apply from the hackathon mandate and project conventions:
+
+- [x] **Spec-Driven**: Plan originates from `spec.md` (updated 2026-03-08).
+- [x] **Docusaurus-First**: Frontend is Docusaurus 3, deployed to GitHub Pages.
+- [x] **RAG-Native**: Core feature using FastAPI/Neon/Qdrant/Gemini.
+- [x] **TDD**: `pytest` before implementation; `httpx.AsyncClient` for async endpoint testing.
+- [x] **`uv` Tooling**: All Python commands via `uv run` / `uv sync`.
+- [x] **WSL2**: All scripts documented for WSL2 shell.
+- [x] **Knowledge Capture**: PHRs required after every significant interaction.
+- [x] **Mandated Auth**: `better-auth` integration required (bonus +50 pts).
+- [x] **Subagents**: Claude Code skills required (bonus +50 pts) — FR-010.
+- [x] **Smallest diff**: No unrelated refactors; incremental phases.
+
+---
 
 ## Project Structure
 
-### Documentation
+### Documentation (this feature)
 
 ```text
 specs/003-physical-ai-robotics-textbook/
-├── spec.md                  # Requirements
+├── spec.md                  # Requirements (updated 2026-03-08)
 ├── plan.md                  # This file
-├── research.md              # Phase 0 output
-├── data-model.md            # Phase 1 output
-├── quickstart.md            # Phase 1 output
+├── research.md              # Phase 0: Technology decisions resolved
+├── data-model.md            # Phase 1: DB schema (Neon + Qdrant)
+├── quickstart.md            # Phase 1: Dev setup guide
 ├── adrs/
-│   ├── ADR-001-vector-dimensions.md
-│   ├── ADR-002-better-auth-fastapi.md
-│   └── ADR-003-content-structure.md
+│   ├── ADR-001-vector-dimensions.md      # 768-dim for gemini-embedding-001
+│   ├── ADR-002-better-auth-fastapi.md    # Cross-language auth via shared Neon
+│   └── ADR-003-content-structure.md     # Module + weekly sub-page hierarchy
 ├── contracts/
-│   └── openapi.yaml         # FastAPI contracts
-└── tasks.md                 # Phase 2 output
+│   └── openapi.yaml         # FastAPI OpenAPI contract (all endpoints)
+└── tasks.md                 # Phase 2 output (generated by /sp.tasks)
 ```
 
 ### Source Code
@@ -65,27 +95,184 @@ specs/003-physical-ai-robotics-textbook/
 ```text
 backend/
 ├── src/
-│   ├── main.py
-│   ├── models/
-│   ├── schemas/
+│   ├── main.py              # FastAPI app — NEEDS: chat/user/translate routes wired
 │   ├── api/
+│   │   ├── health.py        # GET /health ✅
+│   │   ├── chat.py          # POST /chat/, /personalize/, /translate/ — NEEDS CREATION
+│   │   └── users.py         # POST /users/, GET /users/{id} — NEEDS CREATION
 │   ├── services/
-│   └── db/
-└── tests/
+│   │   ├── rag.py           # RAG logic ✅ (import paths need fix)
+│   │   ├── embeddings.py    # Gemini embeddings ✅
+│   │   └── vector_store.py  # Qdrant client ✅
+│   ├── db/
+│   │   ├── database.py      # Async SQLAlchemy engine ✅
+│   │   ├── init_db.py       # DB initializer ✅
+│   │   ├── crud_messages.py # Message CRUD ✅
+│   │   ├── crud_users.py    # User CRUD ✅
+│   │   └── crud_vectors.py  # Qdrant search ✅
+│   ├── models/
+│   │   └── models.py        # ORM: User, Message, UserContext ✅
+│   └── schemas/             # Pydantic request/response schemas — NEEDS POPULATION
+├── scripts/
+│   ├── ingest_textbook.py   # MD → Qdrant embeddings ✅
+│   └── init_qdrant.py       # Qdrant collection setup ✅
+├── tests/
+│   ├── conftest.py          # Test fixtures — NEEDS async DB setup
+│   └── test_rag.py          # RAG tests — NEEDS endpoint tests
+├── pyproject.toml           # uv-managed dependencies
+└── .env.example             # Env template ✅
 
 frontend/
 ├── src/
 │   ├── components/
+│   │   ├── Chat/
+│   │   │   └── Chat.tsx     # RAG chat widget ✅
+│   │   ├── AuthModal/       # NEEDS: better-auth signup/signin modal
+│   │   └── ChapterActions/  # NEEDS: Personalize + Translate buttons
 │   ├── theme/
+│   │   ├── Layout.tsx       # Global chat + auth injection ✅ (needs auth state)
+│   │   └── DocItem/
+│   │       └── Layout/
+│   │           └── index.tsx # NEEDS: inject ChapterActions buttons
 │   └── services/
+│       └── auth.ts           # NEEDS: better-auth client setup
 └── docs/
+    └── module-{1-4}/         # 13 textbook chapters ✅
 
-scripts/                     # Claude Code Subagent scripts
+.claude/
+└── commands/
+    ├── sp.*.md               # Existing SDD skills ✅
+    └── [NEW] textbook-agent skills:
+        ├── ingest-content.md # Subagent: run ingestion pipeline
+        ├── gen-tests.md      # Subagent: scaffold TDD tests for endpoints
+        └── gen-chapter.md    # Subagent: generate chapter content from outline
 ```
+
+---
+
+## Phase 0: Research (Complete)
+
+All technology decisions resolved. See `research.md` for full rationale.
+
+| Decision | Outcome |
+|----------|---------|
+| Vector dimensions | 768 (gemini-embedding-001) — ADR-001 |
+| Auth cross-language | better-auth (TS) + shared Neon session table (FastAPI) — ADR-002 |
+| Content structure | Module landing pages + 13 weekly chapters — ADR-003 |
+| LLM | gemini-2.0-flash via OpenAI-compatible SDK |
+| Deployment | GitHub Pages (frontend) + Render.com (backend) |
+
+---
+
+## Phase 1: Design (Complete)
+
+Artifacts generated:
+
+| Artifact | Path | Status |
+|----------|------|--------|
+| Data model | `data-model.md` | ✅ Neon tables + Qdrant schema |
+| API contracts | `contracts/openapi.yaml` | ✅ All endpoints defined |
+| Quickstart | `quickstart.md` | ✅ WSL2 + uv setup guide |
+
+---
+
+## Phase 2: Implementation Roadmap
+
+### 2A — Fix Backend API Wiring (Critical Gap)
+
+The core RAG/chat/user endpoints exist in `rag.py` and `crud_*.py` but are **not exposed via FastAPI routes**. This must be fixed before any frontend integration.
+
+**Tasks:**
+1. Create `backend/src/api/chat.py` — `/chat/`, `/personalize/`, `/translate/` endpoints
+2. Create `backend/src/api/users.py` — `/users/` (POST, GET)
+3. Create `backend/src/schemas/` Pydantic models for request/response validation
+4. Wire all routers into `backend/src/main.py`
+5. Fix relative import paths in `rag.py` (`from crud_vectors import...` → `from src.db.crud_vectors import...`)
+6. Add async DB session injection via `get_db()` dependency to all route handlers
+7. Write TDD tests: `tests/test_chat.py`, `tests/test_users.py`, `tests/test_health.py`
+
+### 2B — better-auth Integration (Bonus +50 pts)
+
+**Pattern (ADR-002):**
+- Frontend: `better-auth` TypeScript client handles signup/signin/session management
+- Backend: FastAPI reads `Authorization: Bearer <token>` → queries `session` table in Neon → returns `user_id`
+- Signup collects: `hardware_background`, `software_background`, `learning_goal`
+
+**Tasks:**
+1. Install `better-auth` in `frontend/`: `npm install better-auth`
+2. Create `frontend/src/services/auth.ts` — auth client config, signup/signin/signout helpers
+3. Create `frontend/src/components/AuthModal/` — signup form with background questions, signin form
+4. Update `frontend/src/theme/Layout.tsx` — inject auth state + show user avatar/logout
+5. Run `better-auth` migration against Neon to create `user`, `session`, `account`, `verification` tables
+6. Create `backend/src/api/auth_middleware.py` — `get_current_user()` FastAPI dependency
+7. Protect `/chat/`, `/personalize/`, `/translate/` with the auth middleware
+
+### 2C — Per-Chapter Action Buttons (Bonus +50+50 pts)
+
+**Tasks:**
+1. Create `frontend/src/components/ChapterActions/ChapterActions.tsx` — floating action bar with "Personalize" and "Translate to Urdu" buttons (visible only when logged in)
+2. Override `frontend/src/theme/DocItem/Layout/index.tsx` — inject `<ChapterActions>` before chapter body
+3. Wire buttons to call `POST /personalize/` and `POST /translate/` with current page markdown content
+4. Display transformed content inline (toggle original/transformed)
+
+### 2D — Claude Code Subagents & Agent Skills (Bonus +50 pts)
+
+**Tasks:**
+1. Create `.claude/commands/ingest-content.md` — Subagent skill: fetch docs, run `ingest_textbook.py`, verify Qdrant count
+2. Create `.claude/commands/gen-tests.md` — Subagent skill: scaffold `pytest` tests for all unrouted endpoints
+3. Create `.claude/commands/gen-chapter.md` — Subagent skill: generate Docusaurus MDX chapter from a topic outline
+4. Document usage in README
+
+### 2E — TDD & Quality Gates
+
+All FastAPI endpoints must have tests **before** they are considered complete:
+
+| Test File | Endpoints Covered |
+|-----------|------------------|
+| `tests/test_health.py` | `GET /health` |
+| `tests/test_users.py` | `POST /users/`, `GET /users/{id}` |
+| `tests/test_chat.py` | `POST /chat/`, `POST /personalize/`, `POST /translate/` |
+| `tests/test_auth.py` | Session validation middleware |
+
+---
+
+## API Contract Summary
+
+Defined in full at `contracts/openapi.yaml`. Key endpoints:
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| GET | `/health` | None | Liveness check (DB + Qdrant) |
+| POST | `/users/` | None | Register user with background |
+| GET | `/users/{id}` | Bearer | Get user profile |
+| POST | `/chat/` | Bearer | RAG chat (optional: selected_text) |
+| POST | `/personalize/` | Bearer | Personalize chapter content |
+| POST | `/translate/` | Bearer | Translate chapter to Urdu |
+
+---
+
+## ADR Register
+
+| ADR | Title | Decision |
+|-----|-------|---------|
+| ADR-001 | Vector Dimensions | 768-dim for gemini-embedding-001 |
+| ADR-002 | better-auth + FastAPI | Shared Neon session table for cross-language auth |
+| ADR-003 | Content Structure | Module pages + 13 weekly sub-pages |
+
+---
 
 ## Complexity Tracking
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| Two deployments | Docusaurus (static) vs FastAPI (dynamic) | Vercel serverless would require full FastAPI refactor. |
-| Auth complexity | Cross-language (TS auth + Python backend) | Direct consequence of mandated stack. |
+| Item | Why Needed | Simpler Alternative Rejected |
+|------|-----------|------------------------------|
+| Two deployments (Pages + Render) | Docusaurus is static; FastAPI is dynamic | Vercel serverless would require full FastAPI refactor |
+| Cross-language auth (TS + Python) | `better-auth` is TypeScript-only; FastAPI must reuse sessions | Separate Python auth library rejected — hackathon mandates better-auth |
+| Qdrant Cloud + Neon | Two separate data stores required | SQLite vectors rejected — Qdrant provides production-grade semantic search |
+
+---
+
+## Risks
+
+1. **better-auth migration breaks Neon schema**: Run migrations on a Neon branch first; validate before running on production branch.
+2. **Gemini API quota exceeded**: Implement exponential backoff; add graceful degradation message in the chat UI.
+3. **GitHub Pages CORS**: Backend must have GitHub Pages URL in `ALLOWED_ORIGINS` env var before deploying.

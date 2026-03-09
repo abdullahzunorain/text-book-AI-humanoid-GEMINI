@@ -1,5 +1,7 @@
 # Research: Physical AI & Humanoid Robotics Textbook (AI-Native)
 
+**Updated**: 2026-03-08
+
 ## Phase 0 — Research (Resolved)
 
 All unknowns are resolved via ADRs. No open questions remain before implementation.
@@ -27,3 +29,9 @@ All unknowns are resolved via ADRs. No open questions remain before implementati
 | GitHub Pages | Native Docusaurus deployment. | Netlify |
 | Qdrant Cloud | Purpose-built vector search with hybrid filtering. | Pinecone |
 | Neon | Serverless Postgres with branching, perfect for TDD. | Supabase |
+
+### Decision: Claude Code Subagents Pattern (FR-010)
+- **Decision**: Implement reusable Agent Skills as `.claude/commands/*.md` files using the Claude Code custom commands format.
+- **Rationale**: Custom commands in `.claude/commands/` are Claude Code's native mechanism for reusable subagent workflows. They can be invoked via `/skill-name` within any session.
+- **Skills planned**: `ingest-content` (run RAG ingestion pipeline), `gen-tests` (scaffold TDD tests), `gen-chapter` (generate Docusaurus chapter from topic outline).
+- **Alternatives**: Standalone Python scripts were considered but lack the agentic context awareness of Claude Code commands.

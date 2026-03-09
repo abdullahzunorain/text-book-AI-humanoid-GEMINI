@@ -9,7 +9,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "models/embedding-001") # models/embedding-001 has 768 dimensions
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "gemini-embedding-001")
+# ADR-001: Qdrant collection uses 768-dim vectors; gemini-embedding-001 defaults to 3072
+EMBEDDING_DIMENSIONS = int(os.getenv("EMBEDDING_DIMENSIONS", "768"))
 
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
@@ -28,9 +30,10 @@ def get_embedding(text: str, model: str = EMBEDDING_MODEL) -> List[float]:
         model=model,
         content=text,
         task_type="retrieval_document",
-        title="Textbook Chunk"
+        title="Textbook Chunk",
+        output_dimensionality=EMBEDDING_DIMENSIONS,
     )
-    
+
     return result['embedding']
 
 def get_embeddings_batch(texts: List[str], model: str = EMBEDDING_MODEL) -> List[List[float]]:
@@ -46,9 +49,10 @@ def get_embeddings_batch(texts: List[str], model: str = EMBEDDING_MODEL) -> List
     result = genai.embed_content(
         model=model,
         content=processed_texts,
-        task_type="retrieval_document"
+        task_type="retrieval_document",
+        output_dimensionality=EMBEDDING_DIMENSIONS,
     )
-    
+
     return result['embeddings']
 
 if __name__ == "__main__":

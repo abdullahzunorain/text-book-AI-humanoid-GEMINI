@@ -3,7 +3,7 @@ CRUD operations for vector store (Qdrant).
 Handles textbook content indexing and retrieval.
 """
 from qdrant_client import QdrantClient
-from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue, SearchParams
+from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue
 from typing import List, Dict, Optional, Any
 import uuid
 from datetime import datetime
@@ -158,22 +158,18 @@ def search_textbook_content(
             ]
         )
     
-    # Search
-    results = client.search(
+    # Search using query_points (qdrant-client v1.12+)
+    query_response = client.query_points(
         collection_name=TEXTBOOK_COLLECTION,
-        query_vector=query_embedding,
+        query=query_embedding,
         query_filter=search_filter,
         limit=limit,
         score_threshold=score_threshold,
-        search_params=SearchParams(
-            hnsw_ef=128,
-            exact=False
-        )
     )
-    
+
     # Format results
     formatted_results = []
-    for result in results:
+    for result in query_response.points:
         formatted_results.append({
             "score": result.score,
             "text": result.payload.get("text", ""),

@@ -4,7 +4,7 @@ Database models for user management and chat history.
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from database import Base
+from src.db.database import Base
 
 
 class User(Base):

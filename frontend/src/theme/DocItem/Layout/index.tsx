@@ -1,81 +1,78 @@
-import React, { useState, useEffect, type ReactNode } from 'react';
+import React, { useState, type ReactNode } from 'react';
 import Layout from '@theme-original/DocItem/Layout';
 import type LayoutType from '@theme/DocItem/Layout';
-import type {WrapperProps} from '@docusaurus/types';
+import type { WrapperProps } from '@docusaurus/types';
 import ReactMarkdown from 'react-markdown';
+import ChapterActions from '@site/src/components/ChapterActions';
+import { useAuth } from '@site/src/hooks/useAuth';
+import { personalize, translate } from '@site/src/services/contentApi';
 
 type Props = WrapperProps<typeof LayoutType>;
 
 export default function LayoutWrapper(props: Props): ReactNode {
   const [transformedContent, setTransformedContent] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [userId, setUserId] = useState<number>(1); // Mock user ID
+  const { isAuthenticated, token } = useAuth();
 
-  const handleAction = async (action: 'personalize' | 'translate') => {
-    // Attempt to grab text from the article element, or body
+  const getPageContent = (): string => {
     const article = document.querySelector('article');
-    if (!article) return;
-    const content = article.innerText;
+    return article ? article.innerText : '';
+  };
 
-    setLoading(true);
+  const getChapterTitle = (): string => {
+    const h1 = document.querySelector('article h1');
+    return h1 ? h1.textContent || 'Untitled' : 'Untitled';
+  };
+
+  const handlePersonalize = async () => {
+    const content = getPageContent();
+    if (!content) return;
     try {
-      const url = `http://localhost:8000/${action}/`;
-      const payload = action === 'personalize' 
-        ? { user_id: userId, content } 
-        : { content };
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setTransformedContent(data.content);
+      const result = await personalize(content, getChapterTitle(), token);
+      setTransformedContent(result);
     } catch (err) {
       console.error(err);
-      alert(`Failed to ${action} content.`);
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const handleTranslate = async () => {
+    const content = getPageContent();
+    if (!content) return;
+    try {
+      const result = await translate(content, getChapterTitle(), token);
+      setTransformedContent(result);
+    } catch (err) {
+      console.error(err);
     }
   };
 
   return (
     <>
-      <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end', background: 'var(--ifm-color-emphasis-100)', padding: '10px', borderRadius: '8px' }}>
-        <span style={{ margin: 'auto 0 auto 0', fontWeight: 'bold' }}>Interactive Book Features:</span>
-        <button 
-          className="button button--primary button--sm" 
-          onClick={() => handleAction('personalize')}
-          disabled={loading}
-        >
-          {loading ? 'Processing...' : 'Personalize Content'}
-        </button>
-        <button 
-          className="button button--secondary button--sm" 
-          onClick={() => handleAction('translate')}
-          disabled={loading}
-        >
-          {loading ? 'Processing...' : 'Translate to Urdu'}
-        </button>
-        {transformedContent && (
-          <button 
-            className="button button--outline button--danger button--sm" 
-            onClick={() => setTransformedContent(null)}
-          >
-            Reset
-          </button>
-        )}
-      </div>
+      <ChapterActions
+        isAuthenticated={isAuthenticated}
+        isTransformed={!!transformedContent}
+        onPersonalize={handlePersonalize}
+        onTranslate={handleTranslate}
+        onRevert={() => setTransformedContent(null)}
+      />
 
       {transformedContent ? (
-        <article className="markdown" style={{ border: '2px dashed var(--ifm-color-primary)', padding: '20px', borderRadius: '10px' }}>
-          <div style={{ marginBottom: '15px', fontWeight: 'bold', color: 'var(--ifm-color-primary)' }}>
-            ⚠️ This content has been transformed by AI.
+        <article
+          className="markdown"
+          style={{
+            border: '2px dashed var(--ifm-color-primary)',
+            padding: '20px',
+            borderRadius: '10px',
+          }}
+        >
+          <div
+            style={{
+              marginBottom: '15px',
+              fontWeight: 'bold',
+              color: 'var(--ifm-color-primary)',
+            }}
+          >
+            This content has been transformed by AI. Click "Revert to Original"
+            above to restore.
           </div>
           <ReactMarkdown>{transformedContent}</ReactMarkdown>
         </article>

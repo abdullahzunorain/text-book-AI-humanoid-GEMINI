@@ -2,6 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-03-04
+**Updated**: 2026-03-08
 **Feature**: [specs/003-physical-ai-robotics-textbook/spec.md](specs/003-physical-ai-robotics-textbook/spec.md)
 
 ## Content Quality
@@ -34,3 +35,4 @@
 - The specification is fully aligned with the Hackathon I requirements.
 - Mandated technologies (FastAPI, Qdrant, Neon, Better-Auth) are documented as requirements.
 - TDD and `uv` usage are explicitly included to meet user's specific instructions.
+- **2026-03-08**: Spec refined — added FR-010 for Claude Code Subagents/Agent Skills (bonus requirement #4), updated Input header with full hackathon brief summary, status changed from Draft → Refined.

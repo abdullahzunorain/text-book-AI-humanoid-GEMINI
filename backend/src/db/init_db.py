@@ -9,7 +9,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from src.db.database import engine, Base
-from src.models import user, message # Import models to ensure they are registered
+from src.models.models import User, Message, UserContext  # Import models to register with Base
 
 async def init_db():
     print("⏳ Initializing database...")

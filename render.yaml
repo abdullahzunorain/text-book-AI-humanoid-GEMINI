@@ -2,12 +2,13 @@ services:
   - type: web
     name: ai-humanoid-textbook-backend
     env: python
+    runtime: python-3.13.0
     region: oregon
     plan: free
     branch: main
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install uv && uv sync
+    startCommand: uv run uvicorn src.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
@@ -16,9 +17,17 @@ services:
         sync: false
       - key: QDRANT_API_KEY
         sync: false
+      - key: QDRANT_COLLECTION_NAME
+        value: textbook_chunks
       - key: GEMINI_API_KEY
         sync: false
-      - key: APP_ENV
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
+      - key: EMBEDDING_MODEL
+        value: gemini-embedding-001
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: ENVIRONMENT
         value: production
       - key: SECRET_KEY
         generateValue: true

@@ -1,155 +1,82 @@
 """
-Test script for RAG components.
-Tests embeddings generation and vector search functionality.
+Test script for RAG components (manual/integration use).
+Not part of the automated pytest suite — requires live API keys.
 
 Usage:
-    python test_rag.py --query "your test query"
+    cd backend && uv run python tests/test_rag.py --query "your test query"
 """
 import argparse
-from vector_store import get_qdrant_client, check_qdrant_connection
-from embeddings import get_embedding, get_embedding_dimension
-from crud_vectors import search_textbook_content, get_collection_stats
+import sys
+
+from src.services.vector_store import get_qdrant_client
+from src.services.embeddings import get_embedding
+from src.db.crud_vectors import search_textbook_content, get_collection_stats
 
 
 def test_embeddings():
-    """
-    Test embedding generation.
-    """
-    print("\n🧪 Testing Embeddings Generation...")
-    
+    print("\nTesting Embeddings Generation...")
     test_queries = [
         "What is ROS 2?",
         "How to create a node in Python?",
-        "Explain digital twin simulation"
+        "Explain digital twin simulation",
     ]
-    
     for query in test_queries:
         try:
             embedding = get_embedding(query)
-            print(f"   ✓ '{query}'")
-            print(f"      Dimension: {len(embedding)}")
-            print(f"      First 5 values: {[round(v, 4) for v in embedding[:5]]}")
+            print(f"  OK '{query}' dim={len(embedding)}")
         except Exception as e:
-            print(f"   ❌ '{query}' - Error: {e}")
+            print(f"  FAIL '{query}' - {e}")
             return False
-    
     return True
 
 
 def test_qdrant_connection():
-    """
-    Test Qdrant connection.
-    """
-    print("\n🧪 Testing Qdrant Connection...")
-    
-    status = check_qdrant_connection()
-    
-    if status["status"] == "connected":
-        print(f"   ✓ Connected to Qdrant")
-        print(f"   Collections: {status.get('collections_count', 0)}")
-        for col in status.get("collections", []):
-            print(f"      - {col}")
-        return True
-    else:
-        print(f"   ❌ Connection failed: {status.get('error', 'Unknown error')}")
+    print("\nTesting Qdrant Connection...")
+    client = get_qdrant_client()
+    if not client:
+        print("  FAIL: could not create client")
         return False
-
-
-def test_vector_search(query: str = None):
-    """
-    Test vector search functionality.
-    
-    Args:
-        query: Search query (optional)
-    """
-    print("\n🧪 Testing Vector Search...")
-    
-    if not query:
-        query = "What is ROS 2?"
-    
-    print(f"   Query: '{query}'")
-    
     try:
-        client = get_qdrant_client()
-        
-        # Get collection stats
-        stats = get_collection_stats(client)
-        if stats["status"] == "ok":
-            print(f"   Collection stats:")
-            print(f"      Vectors: {stats.get('vectors_count', 0)}")
-            print(f"      Points: {stats.get('points_count', 0)}")
-        
-        if stats.get("vectors_count", 0) == 0:
-            print(f"   ⚠️  No vectors in collection. Run ingest_textbook.py first.")
-            return True
-        
-        # Perform search
-        results = search_textbook_content(
-            client=client,
-            query=query,
-            limit=3
-        )
-        
-        if not results:
-            print(f"   ⚠️  No results found")
-            return True
-        
-        print(f"   ✓ Found {len(results)} results")
-        
-        for i, result in enumerate(results, 1):
-            print(f"\n   Result {i} (score: {result['score']:.4f}):")
-            print(f"      Chapter: {result['chapter_title']}")
-            print(f"      Module: {result['module_name']}")
-            print(f"      Text: {result['text'][:200]}...")
-        
+        cols = client.get_collections()
+        print(f"  OK: {len(cols.collections)} collections")
         return True
-    
     except Exception as e:
-        print(f"   ❌ Search failed: {e}")
+        print(f"  FAIL: {e}")
         return False
+
+
+def test_vector_search(query: str = "What is ROS 2?"):
+    print(f"\nTesting Vector Search: '{query}'")
+    client = get_qdrant_client()
+    if not client:
+        print("  SKIP: no Qdrant client")
+        return True
+
+    stats = get_collection_stats(client)
+    if stats.get("vectors_count", 0) == 0:
+        print("  SKIP: no vectors in collection")
+        return True
+
+    results = search_textbook_content(client=client, query=query, limit=3)
+    print(f"  OK: {len(results)} results")
+    for i, r in enumerate(results, 1):
+        print(f"    [{i}] score={r['score']:.4f} chapter={r['chapter_title']}")
+    return True
 
 
 def main():
-    """
-    Run all tests.
-    """
     parser = argparse.ArgumentParser(description="Test RAG components")
-    parser.add_argument(
-        "--query",
-        type=str,
-        default=None,
-        help="Custom search query for testing"
-    )
-    
+    parser.add_argument("--query", type=str, default=None)
     args = parser.parse_args()
-    
-    print("=" * 60)
-    print("RAG Component Tests")
-    print("=" * 60)
-    
-    # Test embeddings
-    embeddings_ok = test_embeddings()
-    
-    # Test Qdrant connection
-    qdrant_ok = test_qdrant_connection()
-    
-    # Test vector search
-    search_ok = test_vector_search(args.query)
-    
-    # Summary
-    print("\n" + "=" * 60)
-    print("Test Summary")
-    print("=" * 60)
-    print(f"   Embeddings: {'✅ PASS' if embeddings_ok else '❌ FAIL'}")
-    print(f"   Qdrant Connection: {'✅ PASS' if qdrant_ok else '❌ FAIL'}")
-    print(f"   Vector Search: {'✅ PASS' if search_ok else '❌ FAIL'}")
-    
-    all_ok = embeddings_ok and qdrant_ok and search_ok
-    print(f"\n   Overall: {'✅ ALL TESTS PASSED' if all_ok else '❌ SOME TESTS FAILED'}")
-    
+
+    ok_embed = test_embeddings()
+    ok_qdrant = test_qdrant_connection()
+    ok_search = test_vector_search(args.query or "What is ROS 2?")
+
+    all_ok = ok_embed and ok_qdrant and ok_search
+    print(f"\nOverall: {'PASS' if all_ok else 'FAIL'}")
     return 0 if all_ok else 1
 
 
 if __name__ == "__main__":
-    import sys
     sys.exit(main())

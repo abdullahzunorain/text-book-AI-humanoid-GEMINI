@@ -1,9 +1,10 @@
 # Feature Specification: Physical AI & Humanoid Robotics Textbook (AI-Native)
 
-**Feature Branch**: `003-physical-ai-robotics-textbook`  
+**Feature Branch**: `003-physical-ai-robotics-textbook`
 **Created**: 2026-03-04
-**Status**: Draft  
-**Input**: User description: "1 Automatic Zoom Hackathon I: Create a Textbook for Teaching Physical AI & Humanoid Robotics Course... use wsl for bash command and uv python manager for this project...use test-driven development must test each and everything you are building and also check the all the fast api end-points..."
+**Updated**: 2026-03-08
+**Status**: Refined
+**Input**: Hackathon I — Create a Textbook for Teaching Physical AI & Humanoid Robotics Course (Panaversity). Build a unified book project using Claude Code and Spec-Kit Plus. Deliverables: (1) Docusaurus book deployed to GitHub Pages, (2) RAG chatbot using OpenAI Agents/ChatKit SDKs + FastAPI + Neon + Qdrant, (3) Reusable intelligence via Claude Code Subagents/Agent Skills (+50 pts), (4) Signup/Signin via better-auth with user background collection (+50 pts), (5) Per-chapter Personalize button for logged-in users (+50 pts), (6) Per-chapter Urdu Translation button for logged-in users (+50 pts).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -98,6 +99,7 @@ As a logged-in user, I want to click buttons to "Personalize" or "Translate to U
 - **FR-007**: The system MUST provide "Personalize" and "Translate" buttons at the start of each chapter.
 - **FR-008**: The backend MUST be managed using `uv` and tested using TDD principles (FastAPI endpoint testing).
 - **FR-009**: The system MUST record every user interaction in a Prompt History Record (PHR).
+- **FR-010**: The system MUST implement reusable intelligence via Claude Code Subagents and Agent Skills within the book project workflow.
 
 ### Key Entities 
 

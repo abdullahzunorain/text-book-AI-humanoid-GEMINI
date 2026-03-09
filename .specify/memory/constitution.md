@@ -1,33 +1,55 @@
-# Physical AI & Humanoid Robotics Textbook Constitution
+# [PROJECT_NAME] Constitution
+<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
 
 ## Core Principles
 
-### I. Spec-Driven Development (SDD)
-Every feature, chapter, or component must originate from a formal specification (`specs/<feature>/spec.md`). Implementation only begins after a validated plan (`plan.md`) and task list (`tasks.md`) are approved. Vibe-coding is strictly prohibited.
+### [PRINCIPLE_1_NAME]
+<!-- Example: I. Library-First -->
+[PRINCIPLE_1_DESCRIPTION]
+<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
 
-### II. Docusaurus-First Documentation
-The textbook is the primary artifact. All technical content must be authored in Markdown/MDX following Docusaurus conventions. The structure must align with the "Physical AI & Humanoid Robotics" course modules defined in the hackathon syllabus.
+### [PRINCIPLE_2_NAME]
+<!-- Example: II. CLI Interface -->
+[PRINCIPLE_2_DESCRIPTION]
+<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
 
-### III. RAG-Native Integration
-The RAG chatbot is a core component, not an add-on. Every chapter must be "RAG-ready" (clear structure, relevant metadata). The chatbot must utilize FastAPI, Neon Serverless Postgres, and Qdrant Cloud to provide precise answers based ONLY on the textbook content.
+### [PRINCIPLE_3_NAME]
+<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
+[PRINCIPLE_3_DESCRIPTION]
+<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
 
-### IV. Knowledge Capture (PHR)
-Every user interaction must be recorded in a Prompt History Record (PHR). This ensures transparency, reproducibility, and a clear audit trail of the project's evolution.
+### [PRINCIPLE_4_NAME]
+<!-- Example: IV. Integration Testing -->
+[PRINCIPLE_4_DESCRIPTION]
+<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
 
-### V. Test-First Implementation
-For the RAG backend and interactive components, TDD is mandatory. For the textbook content, "tests" include link validation, linting, and RAG accuracy checks.
+### [PRINCIPLE_5_NAME]
+<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
+[PRINCIPLE_5_DESCRIPTION]
+<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
 
-### VI. Modern AI Stack
-We strictly adhere to the mandated stack: Docusaurus (Frontend), FastAPI (API), Neon (Database), Qdrant (Vector DB), and OpenAI Agents.
+### [PRINCIPLE_6_NAME]
 
-## Technical Constraints
-- **Styling:** Prefer Vanilla CSS for Docusaurus customizations unless otherwise specified.
-- **Authentication:** Use `better-auth` for the signup/signin feature.
-- **Deployment:** The book must be deployable to GitHub Pages.
+
+[PRINCIPLE__DESCRIPTION]
+
+## [SECTION_2_NAME]
+<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+
+[SECTION_2_CONTENT]
+<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+
+## [SECTION_3_NAME]
+<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+
+[SECTION_3_CONTENT]
+<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
 
 ## Governance
-- This constitution supersedes all other development practices in this project.
-- Amendments require a formal ADR and update to this document.
-- All PRs must verify compliance with these principles.
+<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-**Version**: 1.0.0 | **Ratified**: 2026-03-03 | **Last Amended**: 2026-03-03
+[GOVERNANCE_RULES]
+<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+
+**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
+<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
