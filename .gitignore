@@ -30,3 +30,5 @@ frontend/.env.local
 node_modules/
 backend/.venv/
 frontend/node_modules/
+frontend/test-results/
+frontend/playwright-report/

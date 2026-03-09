@@ -15,7 +15,7 @@ interface AuthState {
   isLoading: boolean;
 }
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_URL = 'http://localhost:8000';
 const STORAGE_KEY = 'textbook_auth';
 
 function getStoredAuth(): { user: User; token: string } | null {

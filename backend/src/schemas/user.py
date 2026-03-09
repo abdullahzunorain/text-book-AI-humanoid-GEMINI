@@ -5,7 +5,7 @@ from datetime import datetime
 
 class UserCreate(BaseModel):
     name: str
-    email: Optional[str] = None
+    email: str
     hardware_background: Optional[str] = None
     software_background: Optional[str] = None
 

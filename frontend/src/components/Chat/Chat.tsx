@@ -21,7 +21,7 @@ interface ChatProps {
 }
 
 const Chat: React.FC<ChatProps> = ({
-  apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000',
+  apiUrl = 'http://localhost:8000',
   authToken = null,
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
